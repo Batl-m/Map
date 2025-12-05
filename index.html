@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Выбор места</title>
+    <!-- Подключаем Leaflet (Карты) и Telegram WebApp скрипт -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; }
+        #map { height: 100%; width: 100%; }
+        
+        /* Крестик/Пин по центру экрана */
+        .center-marker {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -100%); /* Сдвиг, чтобы острие было в центре */
+            z-index: 1000;
+            pointer-events: none; /* Чтобы карта двигалась сквозь иконку */
+            width: 40px;
+            height: 40px;
+        }
+        
+        /* Кнопка подтверждения в стиле Телеграм */
+        #confirm-btn {
+            position: absolute;
+            bottom: 20px;
+            left: 5%;
+            width: 90%;
+            padding: 15px;
+            background-color: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            z-index: 1000;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+    
+    <!-- SVG иконка пина -->
+    <div class="center-marker">
+        <svg viewBox="0 0 24 24" fill="red" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 0C7.58 0 4 3.58 4 8C4 13.5 12 24 12 24C12 24 20 13.5 20 8C20 3.58 16.42 0 12 0ZM12 11C10.34 11 9 9.66 9 8C9 6.34 10.34 5 12 5C13.66 5 15 6.34 15 8C15 9.66 13.66 11 12 11Z"/>
+        </svg>
+    </div>
+
+    <button id="confirm-btn">Подтвердить локацию</button>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Раскрыть на весь экран
+
+        // Координаты по умолчанию (например, центр Москвы), если нужно
+        const defaultLat = 55.7558;
+        const defaultLng = 37.6173;
+
+        // Инициализация карты
+        const map = L.map('map').setView([defaultLat, defaultLng], 13);
+
+        // Слой карты (OpenStreetMap)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Обработка кнопки
+        document.getElementById('confirm-btn').addEventListener('click', () => {
+            const center = map.getCenter(); // Берем координаты центра экрана (где висит пин)
+            
+            // Формируем данные для отправки боту
+            const data = JSON.stringify({
+                latitude: center.lat,
+                longitude: center.lng
+            });
+
+            // Отправляем данные в Telegram и закрываем окно
+            tg.sendData(data); 
+        });
+    </script>
+</body>
+</html>
