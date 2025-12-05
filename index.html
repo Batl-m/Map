@@ -30,6 +30,7 @@
             left: 5%;
             width: 90%;
             padding: 15px;
+            /* Используем цвета темы Telegram */
             background-color: var(--tg-theme-button-color, #2481cc);
             color: var(--tg-theme-button-text-color, #ffffff);
             border: none;
@@ -39,6 +40,10 @@
             z-index: 1000;
             cursor: pointer;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: background-color 0.2s;
+        }
+        #confirm-btn:active {
+             background-color: var(--tg-theme-secondary-bg-color, #1a74b3);
         }
     </style>
 </head>
@@ -58,18 +63,16 @@
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand(); // Раскрыть на весь экран
-
-        // --- НОВАЯ ЛОГИКА: Чтение координат из URL ---
+        
+        // --- Чтение координат из URL ---
 
         const urlParams = new URLSearchParams(window.location.search);
         
         // Координаты по умолчанию (Астана, если в URL нет параметров)
-        const defaultLat = 51.1605; // Астана
+        const defaultLat = 51.1605; 
         const defaultLng = 71.4704;
         
-        // Используем координаты из URL, если они есть и корректны, иначе дефолтные
-        // parseFloat(urlParams.get('lat')) возвращает NaN, если параметра нет или он не число.
-        // Оператор || (логическое ИЛИ) обеспечивает корректный fallback.
+        // Используем координаты из URL, если они есть и корректны
         const initialLat = parseFloat(urlParams.get('lat')) || defaultLat;
         const initialLng = parseFloat(urlParams.get('lon')) || defaultLng;
 
@@ -91,9 +94,18 @@
                 latitude: center.lat,
                 longitude: center.lng
             });
-
-            // Отправляем данные в Telegram и закрываем окно
-            tg.sendData(data); 
+            
+            // Отправляем данные в Telegram и закрываем окно без лишних слов
+            // Проблема "не срабатывает" может быть из-за отсутствия `tg.close()`
+            // или слишком быстрого завершения скрипта.
+            try {
+                tg.sendData(data); 
+                tg.close(); // Явно закрываем приложение после отправки данных
+            } catch (error) {
+                // Если sendData не сработало (например, в десктопной версии Telegram без Web App API)
+                // можно вывести сообщение в консоль для отладки, но не пользователю.
+                console.error("Ошибка при отправке данных в Telegram:", error);
+            }
         });
     </script>
 </body>
