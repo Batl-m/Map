@@ -30,7 +30,6 @@
             left: 5%;
             width: 90%;
             padding: 15px;
-            /* Используем цвета темы Telegram */
             background-color: var(--tg-theme-button-color, #2481cc);
             color: var(--tg-theme-button-text-color, #ffffff);
             border: none;
@@ -40,10 +39,6 @@
             z-index: 1000;
             cursor: pointer;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: background-color 0.2s;
-        }
-        #confirm-btn:active {
-             background-color: var(--tg-theme-secondary-bg-color, #1a74b3);
         }
     </style>
 </head>
@@ -61,27 +56,17 @@
     <button id="confirm-btn">Подтвердить локацию</button>
 
     <script>
-        // Обертываем всю логику в слушатель события 'DOMContentLoaded', чтобы 
-        // гарантировать, что Leaflet.js (загруженный в head) полностью инициализировался.
+        // Используем DOMContentLoaded для гарантии загрузки Leaflet.js и избежания ошибки L.map is not a function
         document.addEventListener('DOMContentLoaded', () => {
             const tg = window.Telegram.WebApp;
             tg.expand(); // Раскрыть на весь экран
-            
-            // --- Чтение координат из URL ---
 
-            const urlParams = new URLSearchParams(window.location.search);
-            
-            // Координаты по умолчанию (Астана, если в URL нет параметров)
-            const defaultLat = 51.1605; 
+            // Координаты по умолчанию (Астана, для примера)
+            const defaultLat = 51.1605;
             const defaultLng = 71.4704;
-            
-            // Используем координаты из URL, если они есть и корректны
-            const initialLat = parseFloat(urlParams.get('lat')) || defaultLat;
-            const initialLng = parseFloat(urlParams.get('lon')) || defaultLng;
 
-
-            // Инициализация карты с использованием полученных/дефолтных координат
-            const map = L.map('map').setView([initialLat, initialLng], 13);
+            // Инициализация карты
+            const map = L.map('map').setView([defaultLat, defaultLng], 13);
 
             // Слой карты (OpenStreetMap)
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -90,17 +75,19 @@
 
             // Обработка кнопки
             document.getElementById('confirm-btn').addEventListener('click', () => {
-            const center = map.getCenter(); // Берем координаты центра экрана (где висит пин)
-            // Формируем данные для отправки боту
-            const data = JSON.stringify({
-                latitude: center.lat,
-                longitude: center.lng
+                const center = map.getCenter(); // Берем координаты центра экрана (где висит пин)
+                
+                // Формируем данные для отправки боту
+                const data = JSON.stringify({
+                    latitude: center.lat,
+                    longitude: center.lng
+                });
+
+                // Отправляем данные в Telegram и закрываем окно
+                tg.sendData(data); 
+                tg.close();
             });
-            // Отправляем данные в Telegram и закрываем окно
-            tg.sendData(data);
-                }
-            });
-        }); // Конец DOMContentLoaded
+        });
     </script>
 </body>
 </html>
