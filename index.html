@@ -56,37 +56,33 @@
     <button id="confirm-btn">Подтвердить локацию</button>
 
     <script>
-        // Используем DOMContentLoaded для гарантии загрузки Leaflet.js и избежания ошибки L.map is not a function
-        document.addEventListener('DOMContentLoaded', () => {
-            const tg = window.Telegram.WebApp;
-            tg.expand(); // Раскрыть на весь экран
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Раскрыть на весь экран
 
-            // Координаты по умолчанию (Астана, для примера)
-            const defaultLat = 51.1605;
-            const defaultLng = 71.4704;
+        // Координаты по умолчанию (например, центр Москвы), если нужно
+        const defaultLat = 55.7558;
+        const defaultLng = 37.6173;
 
-            // Инициализация карты
-            const map = L.map('map').setView([defaultLat, defaultLng], 13);
+        // Инициализация карты
+        const map = L.map('map').setView([defaultLat, defaultLng], 13);
 
-            // Слой карты (OpenStreetMap)
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(map);
+        // Слой карты (OpenStreetMap)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
 
-            // Обработка кнопки
-            document.getElementById('confirm-btn').addEventListener('click', () => {
-                const center = map.getCenter(); // Берем координаты центра экрана (где висит пин)
-                
-                // Формируем данные для отправки боту
-                const data = JSON.stringify({
-                    latitude: center.lat,
-                    longitude: center.lng
-                });
-
-                // Отправляем данные в Telegram и закрываем окно
-                tg.sendData(data); 
-                tg.close();
+        // Обработка кнопки
+        document.getElementById('confirm-btn').addEventListener('click', () => {
+            const center = map.getCenter(); // Берем координаты центра экрана (где висит пин)
+            
+            // Формируем данные для отправки боту
+            const data = JSON.stringify({
+                latitude: center.lat,
+                longitude: center.lng
             });
+
+            // Отправляем данные в Telegram и закрываем окно
+            tg.sendData(data); 
         });
     </script>
 </body>
