@@ -1,70 +1,105 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Выбор места</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <style>
-    html, body { margin:0; padding:0; height:100%; width:100%; }
-    #map { width:100%; height:100%; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Выбор места</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <style>
+        body, html { margin:0; padding:0; height:100%; width:100%; overflow:hidden; background:#000; }
+        #map { width:100%; height:100%; }
+
+        .center-marker {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 40px; height: 50px;
+            transform: translate(-50%, -100%);
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        #confirm-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 5%;
+            width: 90%;
+            padding: 16px;
+            background: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+    </style>
 </head>
 <body>
-  <div id="map"></div>
 
-  <script>
-    Telegram.WebApp.ready();
-    Telegram.WebApp.expand();
+    <div id="map"></div>
 
-    // Читаем координаты из URL: ?c=lat,lon,zoom
-    const params = new URLSearchParams(location.search);
-    const c = params.get('c') || "51.1694,71.4491,13";  // Астана по умолчанию
-    const [lat, lon, zoom] = c.split(',').map(Number);
+    <!-- Красный пин по центру экрана -->
+    <div class="center-marker">
+        <svg viewBox="0 0 24 32" fill="red">
+            <path d="M12 0C7.2 0 3.2 4 3.2 8.8c0 6.4 8.8 15.2 8.8 15.2s8.8-8.8 8.8-15.2C20.8 4 16.8 0 12 0zm0 12c-1.8 0-3.2-1.4-3.2-3.2S10.2 5.6 12 5.6s3.2 1.4 3.2 3.2S13.8 12 12 12z"/>
+        </svg>
+    </div>
 
-    // Создаём карту
-    const map = L.map('map').setView([lat, lon], zoom);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap'
-    }).addTo(map);
+    <button id="confirm-btn">Подтвердить локацию</button>
 
-    // Маркер (можно двигать)
-    const marker = L.marker([lat, lon], { draggable: true }).addTo(map);
-    marker.bindPopup("Перетащите маркер").openPopup();
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
 
-    // Функция отправки — ТОЛЬКО ПО КНОПКЕ
-    function sendLocation() {
-      const pos = marker.getLatLng();
-      const data = JSON.stringify({
-        lat: parseFloat(pos.lat.toFixed(6)),
-        lon: parseFloat(pos.lng.toFixed(6))
-      });
-      Telegram.WebApp.sendData(data);
-      Telegram.WebApp.close();
-    }
+        // Читаем параметры из URL: ?c=lat,lon,zoom
+        const urlParams = new URLSearchParams(location.search);
+        const c = urlParams.get('c');
+        
+        let lat = 51.1694;   // Астана по умолчанию
+        let lon = 71.4491;
+        let zoom = 13;
 
-    // Кнопка — единственный способ отправить
-    const btn = document.createElement('button');
-    btn.textContent = "Выбрать это место";
-    btn.onclick = sendLocation;
-    btn.style.cssText = `
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 16px 50px;
-      font-size: 19px;
-      font-weight: bold;
-      background: #0088cc;
-      color: white;
-      border: none;
-      border-radius: 16px;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-      z-index: 10000;
-    `;
-    document.body.appendChild(btn);
-  </script>
+        if (c) {
+            const parts = c.split(',');
+            if (parts.length === 3) {
+                lat = parseFloat(parts[0]);
+                lon = parseFloat(parts[1]);
+                zoom = parseInt(parts[2]);
+            }
+        }
+
+        // Создаём карту с нужным центром и зумом
+        const map = L.map('map', {
+            zoomControl: false,
+            dragging: true,
+            touchZoom: true,
+            doubleClickZoom: false,
+            scrollWheelZoom: true,
+            boxZoom: false,
+            keyboard: false
+        }).setView([lat, lon], zoom);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        // Кнопка подтверждения — отправляет координаты ЦЕНТРА экрана
+        document.getElementById('confirm-btn').addEventListener('click', () => {
+            const center = map.getCenter();
+            const data = JSON.stringify({
+                latitude: parseFloat(center.lat.toFixed(6)),
+                longitude: parseFloat(center.lng.toFixed(6))
+            });
+            tg.sendData(data);
+            tg.close();
+        });
+    </script>
 </body>
 </html>
