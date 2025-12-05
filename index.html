@@ -61,52 +61,46 @@
     <button id="confirm-btn">Подтвердить локацию</button>
 
     <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand(); // Раскрыть на весь экран
-        
-        // --- Чтение координат из URL ---
-
-        const urlParams = new URLSearchParams(window.location.search);
-        
-        // Координаты по умолчанию (Астана, если в URL нет параметров)
-        const defaultLat = 51.1605; 
-        const defaultLng = 71.4704;
-        
-        // Используем координаты из URL, если они есть и корректны
-        const initialLat = parseFloat(urlParams.get('lat')) || defaultLat;
-        const initialLng = parseFloat(urlParams.get('lon')) || defaultLng;
-
-
-        // Инициализация карты с использованием полученных/дефолтных координат
-        const map = L.map('map').setView([initialLat, initialLng], 13);
-
-        // Слой карты (OpenStreetMap)
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
-
-        // Обработка кнопки
-        document.getElementById('confirm-btn').addEventListener('click', () => {
-            const center = map.getCenter(); // Берем координаты центра экрана (где висит пин)
+        // Обертываем всю логику в слушатель события 'DOMContentLoaded', чтобы 
+        // гарантировать, что Leaflet.js (загруженный в head) полностью инициализировался.
+        document.addEventListener('DOMContentLoaded', () => {
+            const tg = window.Telegram.WebApp;
+            tg.expand(); // Раскрыть на весь экран
             
+            // --- Чтение координат из URL ---
+
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            // Координаты по умолчанию (Астана, если в URL нет параметров)
+            const defaultLat = 51.1605; 
+            const defaultLng = 71.4704;
+            
+            // Используем координаты из URL, если они есть и корректны
+            const initialLat = parseFloat(urlParams.get('lat')) || defaultLat;
+            const initialLng = parseFloat(urlParams.get('lon')) || defaultLng;
+
+
+            // Инициализация карты с использованием полученных/дефолтных координат
+            const map = L.map('map').setView([initialLat, initialLng], 13);
+
+            // Слой карты (OpenStreetMap)
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Обработка кнопки
+            document.getElementById('confirm-btn').addEventListener('click', () => {
+            const center = map.getCenter(); // Берем координаты центра экрана (где висит пин)
             // Формируем данные для отправки боту
             const data = JSON.stringify({
                 latitude: center.lat,
                 longitude: center.lng
             });
-            
-            // Отправляем данные в Telegram и закрываем окно без лишних слов
-            // Проблема "не срабатывает" может быть из-за отсутствия `tg.close()`
-            // или слишком быстрого завершения скрипта.
-            try {
-                tg.sendData(data); 
-                tg.close(); // Явно закрываем приложение после отправки данных
-            } catch (error) {
-                // Если sendData не сработало (например, в десктопной версии Telegram без Web App API)
-                // можно вывести сообщение в консоль для отладки, но не пользователю.
-                console.error("Ошибка при отправке данных в Telegram:", error);
-            }
-        });
+            // Отправляем данные в Telegram и закрываем окно
+            tg.sendData(data);
+                }
+            });
+        }); // Конец DOMContentLoaded
     </script>
 </body>
 </html>
