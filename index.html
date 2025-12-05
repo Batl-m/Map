@@ -23,8 +23,54 @@
             pointer-events: none; /* Чтобы клики проходили сквозь маркер к карте */
         }
 
-        /* Кнопка подтверждения (MainButton Telegram) */
-        /* Мы используем нативную кнопку Telegram, но для теста в браузере можно раскомментировать свою кнопку */
+        /* Кастомная кнопка подтверждения */
+        #confirm-btn {
+            position: absolute;
+            bottom: 40px; /* Отступ снизу */
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000; /* Поверх карты */
+          
+             background-color: var(--tg-theme-button-color, #2481cc);
+             color: var(--tg-theme-button-text-color, #ffffff);
+            
+            border: none;
+            border-radius: 16px; /* Закругленные углы */
+            padding: 12px 24px;
+            
+            width: 85%; /* Ширина кнопки */
+            max-width: 320px;
+            
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* Тень для объема */
+            
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.1s ease, background-color 0.2s;
+            
+            /* Предотвращение выделения текста */
+            user-select: none; 
+            -webkit-user-select: none;
+        }
+
+        #confirm-btn:active {
+            transform: translateX(-50%) scale(0.96); /* Эффект нажатия */
+            background-color: #f5f5f5;
+        }
+
+        .btn-text-main {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 2px;
+            display: block;
+        }
+
+        .btn-text-sub {
+            font-size: 14px;
+            font-weight: 400;
+            opacity: 0.6; /* Немного прозрачнее для второй строки */
+            display: block;
+        }
+
     </style>
 </head>
 <body>
@@ -37,9 +83,16 @@
         </svg>
     </div>
 
+    <!-- Кастомная кнопка -->
+    <div id="confirm-btn">
+        <span class="btn-text-main">Выбрать это место</span>
+        <span class="btn-text-main">Бұл орынды таңдау</span>
+    </div>
+
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand(); // Раскрываем на весь экран
+        tg.MainButton.hide(); // Явно скрываем нативную кнопку, если она вдруг была
 
         // Получаем параметры из URL (lat, lng)
         const urlParams = new URLSearchParams(window.location.search);
@@ -59,12 +112,13 @@
             attribution: '&copy; OSM'
         }).addTo(map);
 
-        // Настраиваем главную кнопку Telegram
-        tg.MainButton.setText("ВЫБРАТЬ ЭТУ ТОЧКУ");
-        tg.MainButton.show();
+        // Обработка нажатия на кастомную кнопку
+        document.getElementById('confirm-btn').addEventListener('click', function() {
+            // Вибрация для тактильного отклика (если поддерживается устройством)
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('medium');
+            }
 
-        // Обработка нажатия на кнопку
-        tg.MainButton.onClick(function() {
             const center = map.getCenter(); // Получаем текущий центр карты
             const data = {
                 lat: center.lat,
