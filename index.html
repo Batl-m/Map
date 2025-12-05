@@ -3,76 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Выбор локации</title>
-    <!-- Подключаем Telegram WebApp скрипт -->
+    <title>Выбор местоположения</title>
+    <!-- Подключаем Telegram Web App SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Подключаем стили и скрипты Leaflet (карты) -->
+    <!-- Подключаем стили и скрипты Leaflet (Карта) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        body { margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; font-family: sans-serif; }
-        #map { flex-grow: 1; width: 100%; z-index: 1; }
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: sans-serif; }
+        #map { width: 100%; height: 100vh; z-index: 1; }
         
-        /* Кнопка подтверждения */
-        .confirm-btn {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            z-index: 1000; width: 90%; max-width: 300px;
-            padding: 15px; background-color: #2ea6ff; color: white; border: none;
-            border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        /* Фиксированный маркер по центру экрана */
+        #center-marker {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -100%); /* Сдвигаем, чтобы острие указывало в центр */
+            z-index: 1000;
+            pointer-events: none; /* Чтобы клики проходили сквозь маркер к карте */
         }
-        .confirm-btn:active { transform: translateX(-50%) scale(0.98); }
 
-        /* Маркер по центру экрана (фиксированный) */
-        .center-marker {
-            position: absolute; top: 50%; left: 50%;
-            width: 36px; height: 36px;
-            /* Смещаем на половину ширины и полную высоту вверх, чтобы "острие" было в центре */
-            transform: translate(-50%, -100%); 
-            z-index: 500; pointer-events: none; /* Чтобы карта под ним двигалась */
-            background-image: url('https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png');
-            background-repeat: no-repeat;
-            background-position: center bottom;
-        }
-        /* Тень маркера */
-        .center-marker::after {
-            content: ''; position: absolute; bottom: 0; left: 50%;
-            width: 10px; height: 2px; background: rgba(0,0,0,0.3);
-            transform: translateX(-50%); border-radius: 50%;
-        }
+        /* Кнопка подтверждения (MainButton Telegram) */
+        /* Мы используем нативную кнопку Telegram, но для теста в браузере можно раскомментировать свою кнопку */
     </style>
 </head>
 <body>
     <div id="map"></div>
-    <div class="center-marker"></div>
-    <button class="confirm-btn" onclick="sendLocation()">Выбрать эту точку</button>
+    
+    <!-- SVG иконка маркера -->
+    <div id="center-marker">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 0C7.58 0 4 3.58 4 8C4 13.5 12 24 12 24C12 24 20 13.5 20 8C20 3.58 16.42 0 12 0ZM12 11C10.34 11 9 9.66 9 8C9 6.34 10.34 5 12 5C13.66 5 15 6.34 15 8C15 9.66 13.66 11 12 11Z" fill="#FF3B30"/>
+        </svg>
+    </div>
 
     <script>
         const tg = window.Telegram.WebApp;
-        tg.expand(); // Развернуть на весь экран
+        tg.expand(); // Раскрываем на весь экран
 
-        // Парсинг параметров URL (широта, долгота из кнопки бота)
+        // Получаем параметры из URL (lat, lng)
         const urlParams = new URLSearchParams(window.location.search);
         // Дефолт (Астана), если параметры не переданы
-        const lat = parseFloat(urlParams.get('lat')) || 51.1694;
-        const lng = parseFloat(urlParams.get('lng')) || 71.4491;
+        const startLat = parseFloat(urlParams.get('lat')) || 51.1694;
+        const startLng = parseFloat(urlParams.get('lng')) || 71.4491;
 
         // Инициализация карты
-        const map = L.map('map', { zoomControl: false }).setView([lat, lng], 13);
+        const map = L.map('map', {
+            center: [startLat, startLng],
+            zoom: 13,
+            zoomControl: false // Убираем кнопки зума для мобильного вида
+        });
+
+        // Добавляем слой OpenStreetMap (бесплатно)
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: 'OSM'
+            attribution: '&copy; OSM'
         }).addTo(map);
 
-        // Функция отправки данных боту
-        function sendLocation() {
-            const center = map.getCenter(); // Берем координаты центра, куда смотрит маркер
-            const data = JSON.stringify({
+        // Настраиваем главную кнопку Telegram
+        tg.MainButton.setText("ВЫБРАТЬ ЭТУ ТОЧКУ");
+        tg.MainButton.show();
+
+        // Обработка нажатия на кнопку
+        tg.MainButton.onClick(function() {
+            const center = map.getCenter(); // Получаем текущий центр карты
+            const data = {
                 lat: center.lat,
                 lng: center.lng
-            });
-            tg.sendData(data); // Отправляем в Telegram
+            };
+            tg.sendData(JSON.stringify(data)); // Отправляем данные боту
             tg.close(); // Закрываем Web App
-        }
+        });
     </script>
 </body>
 </html>
