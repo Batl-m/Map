@@ -1,69 +1,70 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-    <style>
-        body, html { margin:0; padding:0; height:100%; }
-        #map { width:100%; height:100vh; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Выбор места</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    html, body { margin:0; padding:0; height:100%; width:100%; }
+    #map { width:100%; height:100%; }
+  </style>
 </head>
 <body>
-    <div id="map"></div>
+  <div id="map"></div>
 
-    <script>
-        const tg = Telegram.WebApp;
-        tg.ready();
-        tg.expand();
+  <script>
+    Telegram.WebApp.ready();
+    Telegram.WebApp.expand();
 
-        // Получаем координаты из URL: ?c=lat,lon,zoom
-        const params = new URLSearchParams(location.search);
-        const fallback = "51.1694,71.4491,13"; // Астана
-        const [lat, lon, zoom] = (params.get('c') || fallback).split(',').map(Number);
+    // Читаем координаты из URL: ?c=lat,lon,zoom
+    const params = new URLSearchParams(location.search);
+    const c = params.get('c') || "51.1694,71.4491,13";  // Астана по умолчанию
+    const [lat, lon, zoom] = c.split(',').map(Number);
 
-        const map = L.map('map').setView([lat, lon], zoom);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    // Создаём карту
+    const map = L.map('map').setView([lat, lon], zoom);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
 
-        const marker = L.marker([lat, lon], { draggable: true }).addTo(map);
-        marker.bindPopup("Перетащите маркер").openPopup();
+    // Маркер (можно двигать)
+    const marker = L.marker([lat, lon], { draggable: true }).addTo(map);
+    marker.bindPopup("Перетащите маркер").openPopup();
 
-        // УБРАЛИ ВСЕ АВТООТПРАВКИ — теперь только по кнопке!
-        // marker.on('dragend', ...)  ← удалено
-        // map.on('click', ...)       ← удалено
+    // Функция отправки — ТОЛЬКО ПО КНОПКЕ
+    function sendLocation() {
+      const pos = marker.getLatLng();
+      const data = JSON.stringify({
+        lat: parseFloat(pos.lat.toFixed(6)),
+        lon: parseFloat(pos.lng.toFixed(6))
+      });
+      Telegram.WebApp.sendData(data);
+      Telegram.WebApp.close();
+    }
 
-        // Функция отправки — ТОЛЬКО по нажатию кнопки
-        function sendLocation() {
-            const pos = marker.getLatLng();
-            const data = JSON.stringify({
-                lat: pos.lat.toFixed(6),
-                lon: pos.lng.toFixed(6)
-            });
-            tg.sendData(data);
-            tg.close();
-        }
-
-        // Большая красивая кнопка — единственный способ отправить
-        const btn = document.createElement('button');
-        btn.textContent = "Выбрать это место";
-        btn.style.cssText = `
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 16px 48px;
-            font-size: 19px;
-            background: #0088cc;
-            color: white;
-            border: none;
-            border-radius: 16px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            z-index: 10000;
-            font-weight: bold;
-        `;
-        btn.onclick = sendLocation;
-        document.body.appendChild(btn);
-    </script>
+    // Кнопка — единственный способ отправить
+    const btn = document.createElement('button');
+    btn.textContent = "Выбрать это место";
+    btn.onclick = sendLocation;
+    btn.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 16px 50px;
+      font-size: 19px;
+      font-weight: bold;
+      background: #0088cc;
+      color: white;
+      border: none;
+      border-radius: 16px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+      z-index: 10000;
+    `;
+    document.body.appendChild(btn);
+  </script>
 </body>
 </html>
